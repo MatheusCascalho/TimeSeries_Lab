@@ -1,3 +1,5 @@
+# Autor: Matheus Cascalho dos Santos
+
 from statsmodels.tsa.seasonal import seasonal_decompose, DecomposeResult
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import levene
@@ -9,6 +11,8 @@ import numpy as np
 
 class Analyser:
     def __init__(self, data: np.ndarray, **kwargs):
+        if type(data) != np.ndarray:
+            data = np.array(data)
         self.__data = data
         self.name = kwargs['name'] if 'name' in kwargs.keys() else 'DATA'
         self.model = kwargs['model'] if 'model' in kwargs.keys() else 'additive'
@@ -19,6 +23,9 @@ class Analyser:
     def __str__(self):
         return self.__description
 
+    def stats(self) -> pd.Series:
+        return pd.Series(self.__data).describe()
+
     def decomposition(self) -> DecomposeResult:
         try:
             return seasonal_decompose(self.__data, self.model, freq=self.freq)
@@ -27,7 +34,6 @@ class Analyser:
             self.model = 'additive'
             print(f'\nFoi adotado o modelo padrão {self.model}')
             return seasonal_decompose(self.__data, self.model, freq=self.freq)
-
 
     def plot_decomposition(self, *args, **kwargs):
         """
@@ -71,7 +77,7 @@ class Analyser:
         row.append('H0 Accepted' if result[1] > 0.05 else 'H0 Rejected')
         return pd.DataFrame([row], columns=['Dataset', 'ADF Statistic', 'p-value', 'Result'])
 
-    def homokedasticity(self) -> pd.DataFrame:
+    def homoscedasticity(self) -> pd.DataFrame:
         row = [self.name]
         cut = len(self.__data) // 2
         ds1, ds2 = self.__data[:cut], self.__data[cut:]
@@ -82,7 +88,7 @@ class Analyser:
 
     def analyse(self) -> None:
         adf: pd.DataFrame = self.stationarity()
-        hmk: pd.DataFrame = self.homokedasticity()
+        hmk: pd.DataFrame = self.homoscedasticity()
         self.__description = ''
         if 'Rejected' in adf['Result']:
             self.__description += 'A série é estacionária!!\n'
