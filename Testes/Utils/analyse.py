@@ -6,6 +6,7 @@ from scipy.stats import levene
 from statsmodels.graphics.tsaplots import plot_acf
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 
 
@@ -18,13 +19,25 @@ class Analyser:
         self.model = kwargs['model'] if 'model' in kwargs.keys() else 'additive'
         self.freq = kwargs['freq'] if 'freq' in kwargs.keys() else 1
         self.__description = ''
+
         self.analyse()
 
     def __str__(self):
         return self.__description
 
+    def esperanca(self):
+        value_counts = pd.Series(self.__data).value_counts()
+        total = len(self.__data)
+        s = 0
+        for d, c in zip(value_counts.index, value_counts.values):
+            s += d * (c / total)
+        return s
+
     def stats(self) -> pd.Series:
-        return pd.Series(self.__data).describe()
+        st = pd.Series(self.__data).describe()
+        st['Esp'] = self.esperanca()
+        st['Var'] = self.__data.std() ** 2
+        return st
 
     def decomposition(self) -> DecomposeResult:
         try:
@@ -35,7 +48,7 @@ class Analyser:
             print(f'\nFoi adotado o modelo padrão {self.model}')
             return seasonal_decompose(self.__data, self.model, freq=self.freq)
 
-    def plot_decomposition(self, *args, **kwargs):
+    def plot_decomposition(self, *args, **kwargs) -> Figure:
         """
         Plot decomposition from data
 
@@ -56,18 +69,16 @@ class Analyser:
         fig, ax = plt.subplots(nrows=len(args), ncols=1, figsize=figsize)
         dec = self.decomposition()
         for i, v in enumerate(args):
-            if len(args) > 1:
-                ax[i].set_title(v)
-            else:
-                ax.set_title(v)
+            a = ax[i] if len(args) > 1 else ax
+            a.set_title(v)
             if v == 'seasonal':
-                dec.seasonal.plot(ax=ax[i] if len(args) > 1 else ax)
+                a.plot(dec.seasonal)
             elif v == 'trend':
-                dec.trend.plot(ax=ax[i] if len(args) > 1 else ax)
+                a.plot(dec.trend)
             elif v == 'resid':
-                dec.resid.plot(ax=ax[i] if len(args) > 1 else ax)
+                a.plot(dec.resid)
             else:
-                dec.observed.plot(ax=ax[i] if len(args) > 1 else ax)
+                a.plot(dec.observed)
         return fig
 
     def stationarity(self) -> pd.DataFrame:
@@ -110,3 +121,14 @@ class Analyser:
 
 
 # --------------------------------------------------------------------------------------------------
+
+if __name__ == '__main__':
+    f = '../AirQuality/AirQualityUCI.csv'
+    df = pd.read_csv(f, sep=';')
+    data = df['PT08.S1(CO)'].dropna()
+    an = Analyser(data)
+    print(an.stats())
+    l = ['seasonal', 'resid', 'observed']
+    g = an.plot_decomposition(*l, figsize=(20, 10))
+    g.savefig('data.png')
+    print(an)
