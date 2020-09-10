@@ -1,13 +1,14 @@
 # Autor: Matheus Cascalho dos Santos
 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 from statsmodels.tsa.seasonal import seasonal_decompose, DecomposeResult
 from statsmodels.tsa.stattools import adfuller
 from scipy.stats import levene
-from statsmodels.graphics.tsaplots import plot_acf
-import pandas as pd
-import matplotlib.pyplot as plt
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from matplotlib.figure import Figure
-import numpy as np
 
 
 class Analyser:
@@ -25,6 +26,13 @@ class Analyser:
     def __str__(self):
         return self.__description
 
+    def __len__(self):
+        return len(self.__data)
+
+    @property
+    def data(self):
+        return self.__data
+
     def esperanca(self):
         value_counts = pd.Series(self.__data).value_counts()
         total = len(self.__data)
@@ -41,12 +49,12 @@ class Analyser:
 
     def decomposition(self) -> DecomposeResult:
         try:
-            return seasonal_decompose(self.__data, self.model, freq=self.freq)
+            return seasonal_decompose(self.__data, self.model, period=self.freq)
         except ValueError:
             print(f'Exceção: {ValueError}')
             self.model = 'additive'
             print(f'\nFoi adotado o modelo padrão {self.model}')
-            return seasonal_decompose(self.__data, self.model, freq=self.freq)
+            return seasonal_decompose(self.__data, self.model, period=self.freq)
 
     def plot_decomposition(self, *args, **kwargs) -> Figure:
         """
@@ -86,7 +94,8 @@ class Analyser:
         result = adfuller(self.__data)
         row.extend([result[0], result[1]])
         row.append('H0 Accepted' if result[1] > 0.05 else 'H0 Rejected')
-        return pd.DataFrame([row], columns=['Dataset', 'ADF Statistic', 'p-value', 'Result'])
+        row.append('Não Estacionária'if result[1] > 0.05 else 'Estacionária')
+        return pd.DataFrame([row], columns=['Dataset', 'ADF Statistic', 'p-value', 'Result', 'Estacionariedade'])
 
     def homoscedasticity(self) -> pd.DataFrame:
         row = [self.name]
@@ -95,18 +104,19 @@ class Analyser:
         result = levene(ds1, ds2)
         row.extend([result.statistic, result.pvalue])
         row.append('H0 Accepted' if result.pvalue > 0.05 else 'H0 Rejected')
-        return pd.DataFrame([row], columns=['Dataset', 'Levene Statistic', 'p-value', 'Result'])
+        row.append('Homocedástica'if result[1] > 0.05 else 'Heterocedástica')
+        return pd.DataFrame([row], columns=['Dataset', 'Levene Statistic', 'p-value', 'Result', 'Cedasticidade'])
 
     def analyse(self) -> None:
         adf: pd.DataFrame = self.stationarity()
         hmk: pd.DataFrame = self.homoscedasticity()
         self.__description = ''
-        if 'Rejected' in adf['Result']:
+        if 'Rejected' in adf['Result'].values[0]:
             self.__description += 'A série é estacionária!!\n'
         else:
             self.__description += 'A série é não-estacionária!!\n'
 
-        if 'Accepted' in hmk['Result']:
+        if 'H0 Accepted' in hmk['Result'].values[0]:
             self.__description += 'As variâncias das sub-amostras são iguais \n'
         else:
             self.__description += 'As variâncias das sub-amostras não são iguais\n'
@@ -119,16 +129,35 @@ class Analyser:
         self.__description = ''
         self.analyse()
 
+    def acf(self):
+        fig, ax = plt.subplots(nrows=2, ncols=1)
+        plot_acf(self.__data, lags=10, ax=ax[0])
+        plot_pacf(self.__data, lags=10, ax=ax[1])
+        plt.tight_layout()
 
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    f = '../AirQuality/AirQualityUCI.csv'
-    df = pd.read_csv(f, sep=';')
-    data = df['PT08.S1(CO)'].dropna()
-    an = Analyser(data)
-    print(an.stats())
-    l = ['seasonal', 'resid', 'observed']
-    g = an.plot_decomposition(*l, figsize=(20, 10))
-    g.savefig('data.png')
+    # f = '../AirQuality/AirQualityUCI.csv'
+    # df = pd.read_csv(f, sep=';')
+    # data = df['PT08.S1(CO)'].dropna()
+    # an = Analyser(data)
+    # print(an.stats())
+    # l = ['seasonal', 'resid', 'observed']
+    # g = an.plot_decomposition(*l, figsize=(20, 10))
+    # g.savefig('data.png')
+    # print(an)
+
+    from pyFTS.common import Transformations
+    from pyFTS.data import AirPassengers
+
+    data = AirPassengers.get_dataframe()
+    data['Month'] = pd.to_datetime(data['Month'], format='%Y-%m')
+    trend = Transformations.LinearTrend(data_field='Passengers', index_type='datetime',
+                                        index_field='Month', datetime_mask='%Y-%m')
+    trend.train(data)
+    datad = trend.apply(data[20:])
+    datad2 = [y / (t + 1) for t, y in enumerate(datad)]
+    plt.plot(datad2)
+    an = Analyser(datad2[20:], name='datad2')
     print(an)

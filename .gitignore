@@ -347,3 +347,4 @@ dmypy.json
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm,libreoffice,microsoftoffice,jupyternotebooks,jetbrains,python
 /Testes/Untitled.ipynb
+/Testes/Utils/data.png
