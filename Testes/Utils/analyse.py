@@ -129,35 +129,23 @@ class Analyser:
         self.__description = ''
         self.analyse()
 
-    def acf(self):
+    def acf(self, lags=10):
         fig, ax = plt.subplots(nrows=2, ncols=1)
-        plot_acf(self.__data, lags=10, ax=ax[0])
-        plot_pacf(self.__data, lags=10, ax=ax[1])
+        plot_acf(self.__data, lags=lags, ax=ax[0])
+        plot_pacf(self.__data, lags=lags, ax=ax[1])
         plt.tight_layout()
 
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
-    # f = '../AirQuality/AirQualityUCI.csv'
-    # df = pd.read_csv(f, sep=';')
-    # data = df['PT08.S1(CO)'].dropna()
-    # an = Analyser(data)
-    # print(an.stats())
-    # l = ['seasonal', 'resid', 'observed']
-    # g = an.plot_decomposition(*l, figsize=(20, 10))
-    # g.savefig('data.png')
-    # print(an)
-
-    from pyFTS.common import Transformations
-    from pyFTS.data import AirPassengers
-
-    data = AirPassengers.get_dataframe()
-    data['Month'] = pd.to_datetime(data['Month'], format='%Y-%m')
-    trend = Transformations.LinearTrend(data_field='Passengers', index_type='datetime',
-                                        index_field='Month', datetime_mask='%Y-%m')
-    trend.train(data)
-    datad = trend.apply(data[20:])
-    datad2 = [y / (t + 1) for t, y in enumerate(datad)]
-    plt.plot(datad2)
-    an = Analyser(datad2[20:], name='datad2')
+    f = '../AirQuality/AirQualityUCI.csv'
+    df = pd.read_csv(f, sep=';')
+    data = df['PT08.S1(CO)'].dropna()
+    data = data[np.where(data > 0)[0]]
+    an = Analyser(data, model='multiplicative')
+    print(an.stats())
+    l = ['seasonal', 'resid', 'observed']
+    g = an.plot_decomposition(*l, figsize=(20, 10))
+    g.savefig('data.png')
     print(an)
+
