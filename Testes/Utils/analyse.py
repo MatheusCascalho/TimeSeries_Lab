@@ -9,7 +9,7 @@ from statsmodels.tsa.stattools import adfuller
 from scipy.stats import levene
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from matplotlib.figure import Figure
-
+from typing import Tuple
 
 class Analyser:
     def __init__(self, data: np.ndarray, **kwargs):
@@ -47,21 +47,24 @@ class Analyser:
         st['Var'] = self.__data.std() ** 2
         return st
 
-    def decomposition(self) -> DecomposeResult:
+    def decomposition(self, data_range: Tuple[int, int] = (0, 100)) -> DecomposeResult:
         try:
-            return seasonal_decompose(self.__data, self.model, period=self.freq)
+            return seasonal_decompose(self.__data[data_range[0]:data_range[1]],
+                                      self.model, period=self.freq)
         except ValueError:
             print(f'Exceção: {ValueError}')
             self.model = 'additive'
             print(f'\nFoi adotado o modelo padrão {self.model}')
-            return seasonal_decompose(self.__data, self.model, period=self.freq)
-
+            return seasonal_decompose(self.__data[data_range[0]:data_range[1]],
+                                      self.model, period=self.freq)
     def plot_decomposition(self, *args, **kwargs) -> Figure:
         """
         Plot decomposition from data
 
         :param args: 'seasonal', 'trend', 'resid' or 'observed'
-        :param kwargs: figsize
+        :param kwargs:
+                figsize,
+                data_range
         :return:
         """
         figsize = kwargs['figsize'] if 'figsize' in kwargs.keys() else (12, 8)
@@ -75,7 +78,8 @@ class Analyser:
             del invalid, messages
         args = [v for v in args if v in valid_args]
         fig, ax = plt.subplots(nrows=len(args), ncols=1, figsize=figsize)
-        dec = self.decomposition()
+        data_range = kwargs.get('data_range', (0, 100))
+        dec = self.decomposition(data_range=data_range)
         for i, v in enumerate(args):
             a = ax[i] if len(args) > 1 else ax
             a.set_title(v)
