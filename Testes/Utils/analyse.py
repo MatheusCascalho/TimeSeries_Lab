@@ -11,6 +11,7 @@ from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from matplotlib.figure import Figure
 from typing import Tuple
 
+
 class Analyser:
     def __init__(self, data: np.ndarray, **kwargs):
         if type(data) != np.ndarray:
@@ -57,6 +58,7 @@ class Analyser:
             print(f'\nFoi adotado o modelo padrão {self.model}')
             return seasonal_decompose(self.__data[data_range[0]:data_range[1]],
                                       self.model, period=self.freq)
+
     def plot_decomposition(self, *args, **kwargs) -> Figure:
         """
         Plot decomposition from data
@@ -98,7 +100,7 @@ class Analyser:
         result = adfuller(self.__data)
         row.extend([result[0], result[1]])
         row.append('H0 Accepted' if result[1] > 0.05 else 'H0 Rejected')
-        row.append('Não Estacionária'if result[1] > 0.05 else 'Estacionária')
+        row.append('Não Estacionária' if result[1] > 0.05 else 'Estacionária')
         return pd.DataFrame([row], columns=['Dataset', 'ADF Statistic', 'p-value', 'Result', 'Estacionariedade'])
 
     def homoscedasticity(self) -> pd.DataFrame:
@@ -108,7 +110,7 @@ class Analyser:
         result = levene(ds1, ds2)
         row.extend([result.statistic, result.pvalue])
         row.append('H0 Accepted' if result.pvalue > 0.05 else 'H0 Rejected')
-        row.append('Homocedástica'if result[1] > 0.05 else 'Heterocedástica')
+        row.append('Homocedástica' if result[1] > 0.05 else 'Heterocedástica')
         return pd.DataFrame([row], columns=['Dataset', 'Levene Statistic', 'p-value', 'Result', 'Cedasticidade'])
 
     def analyse(self) -> None:
@@ -139,6 +141,7 @@ class Analyser:
         plot_pacf(self.__data, lags=lags, ax=ax[1])
         plt.tight_layout()
 
+
 # --------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -152,4 +155,3 @@ if __name__ == '__main__':
     g = an.plot_decomposition(*l, figsize=(20, 10))
     g.savefig('data.png')
     print(an)
-
