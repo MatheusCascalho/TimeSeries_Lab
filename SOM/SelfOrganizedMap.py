@@ -1,16 +1,28 @@
 import numpy as np
 from typing import List
 from SOM.Neuron import Neuron
+from SOM.NeuralNetwork import NeuralNetwork
 import random
 
 
-class SelfOrganizedMap:
+class SelfOrganizedMap(NeuralNetwork):
     def __init__(self,
                  data_training: List[Neuron],
                  dimension_number: int,
                  neuron_per_dimension: int,
                  initial_radius: float
                  ):
+        """
+
+        
+        :param data_training:
+        :param dimension_number:
+        :param neuron_per_dimension:
+        :param initial_radius:
+        """
+        NeuralNetwork.__init__(n_layers=1,
+                               neurons=list())
+
         self.__data_training: List[Neuron] = data_training
         self.__d: int = dimension_number
         self.__n: int = neuron_per_dimension
