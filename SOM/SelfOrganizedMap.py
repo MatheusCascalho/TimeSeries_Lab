@@ -104,6 +104,7 @@ class SelfOrganizedMap(NeuralNetwork):
         self.__layer = layer
 
     def transform(self, input_vector: np.ndarray) -> np.ndarray:
+        # TODO: Verify if only one neuron is activated
         neurons = []
         positions = []
         for i, line in enumerate(self.__layer):
