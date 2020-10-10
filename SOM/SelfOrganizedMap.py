@@ -5,16 +5,22 @@ from SOM.NeuralNetwork import NeuralNetwork
 import random
 from math import exp
 
+
+def euclidean_dist(a: np.ndarray, b: np.ndarray) -> float:
+    d: np.ndarray = (a - b)**2
+    d = d.sum()
+    d: float = np.sqrt(d)
+    return d
+
+
 class SelfOrganizedMap(NeuralNetwork):
     def __init__(self,
                  neuron_per_dimension: Union[List, Tuple],
                  initial_radius: float
                  ):
         """
+        Self Organized Map Class.
 
-        
-        :param data_training:
-        :param dimension_number:
         :param neuron_per_dimension:
         :param initial_radius:
         """
@@ -35,42 +41,39 @@ class SelfOrganizedMap(NeuralNetwork):
     def r(self):
         return self.__r
 
-    def dist(self, a: np.ndarray, b: np.ndarray) -> float:
-        dist: np.ndarray = (a - b)**2
-        dist = dist.sum()
-        dist: float = np.sqrt(dist)
-        return dist
-
     def neighbors(self, neuron: Neuron) -> List[Neuron]:
         neighbors = []
         for line in self.__layer:
             for other_neuron in line:
-                dist = self.dist(neuron.w, other_neuron.w)
-                if dist < self.__r:
+                d = euclidean_dist(neuron.w, other_neuron.w)
+                if d < self.__r:
                     neighbors.append(other_neuron)
         return neighbors
 
     def neuron_winner(self,
-                      input: np.ndarray) -> Neuron:
+                      input_vector: np.ndarray,
+                      dist_function: Any) -> Neuron:
         best_dist: float = float('inf')
         winner: Neuron = self.__layer[0][0]
 
         for line in self.__layer:
             for neuron in line:
-                dist = self.dist(input, neuron.w)
-                if dist < best_dist:
-                    best_dist = dist
+                d = dist_function(input_vector, neuron.w)
+                if d < best_dist:
+                    best_dist = d
                     winner: Neuron = neuron
         return winner
 
     def fit(self,
             data_training: List[np.ndarray],
             activation_function: Any,
+            dist_function: Any = euclidean_dist,
             learning_rate: float = .5) -> None:
         """
         Self organized Map Function
         :param data_training:
         :param activation_function:
+        :param dist_function:
         :param learning_rate:
         :return:
         """
@@ -90,12 +93,24 @@ class SelfOrganizedMap(NeuralNetwork):
         layer: np.ndarray = np.array(lines)
 
         for x in data_training:
-            winner = self.neuron_winner(x)
+            winner = self.neuron_winner(x, dist_function=dist_function)
 
             # update neighbors
             neighbors = self.neighbors(winner)
             for neuron in neighbors:
-                new_w = neuron.w + learning_rate*exp(-self.dist(winner.w, neuron.w)) / self.__r * (x - neuron.w)
+                new_w = neuron.w + learning_rate * exp(- dist_function(winner.w, neuron.w)) / self.__r * (x - neuron.w)
                 neuron.update_weight(new_w)
 
         self.__layer = layer
+
+    def transform(self, input_vector: np.ndarray) -> np.ndarray:
+        neurons = []
+        positions = []
+        for i, line in enumerate(self.__layer):
+            for j, neuron in enumerate(line):
+                if neuron.out(input_vector):
+                    neurons.append(neuron)
+                    positions.append([i, j])
+
+        output = np.array(positions[0])
+        return output
