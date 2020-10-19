@@ -42,7 +42,7 @@ class SelfOrganizedMap(NeuralNetwork):
         neighbors = []
         for line in self.__layer:
             for other_neuron in line:
-                d = la.norm(neuron.w) - la.norm(other_neuron.w)
+                d = la.norm(neuron.w - other_neuron.w)
                 if d < self.__r:
                     neighbors.append(other_neuron)
         return neighbors
@@ -55,7 +55,7 @@ class SelfOrganizedMap(NeuralNetwork):
 
         for line in self.__layer:
             for neuron in line:
-                d = la.norm(input_vector) - la.norm(neuron.w)
+                d = la.norm(input_vector - neuron.w)
                 if d < best_dist:
                     best_dist = d
                     winner: Neuron = neuron
