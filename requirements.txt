@@ -1,0 +1,7 @@
+pandas
+numpy
+Pillow
+matplotlib
+seaborn
+SimpSOM
+sklearn
