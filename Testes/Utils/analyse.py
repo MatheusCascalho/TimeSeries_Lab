@@ -93,6 +93,7 @@ class Analyser:
                 a.plot(dec.resid)
             else:
                 a.plot(dec.observed)
+        plt.tight_layout()
         return fig
 
     def stationarity(self) -> pd.DataFrame:
