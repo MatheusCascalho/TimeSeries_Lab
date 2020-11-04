@@ -23,6 +23,7 @@ class Analyser:
         self.__description = ''
 
         self.analyse()
+        self.H0_ACCEPTED = 'H0 Accepted'
 
     def __str__(self):
         return self.__description
@@ -96,27 +97,29 @@ class Analyser:
         plt.tight_layout()
         return fig
 
+    @property
     def stationarity(self) -> pd.DataFrame:
         row = [self.name]
         result = adfuller(self.__data)
         row.extend([result[0], result[1]])
-        row.append('H0 Accepted' if result[1] > 0.05 else 'H0 Rejected')
+        row.append(self.H0_ACCEPTED if result[1] > 0.05 else 'H0 Rejected')
         row.append('Não Estacionária' if result[1] > 0.05 else 'Estacionária')
         return pd.DataFrame([row], columns=['Dataset', 'ADF Statistic', 'p-value', 'Result', 'Estacionariedade'])
 
+    @property
     def homoscedasticity(self) -> pd.DataFrame:
         row = [self.name]
         cut = len(self.__data) // 2
         ds1, ds2 = self.__data[:cut], self.__data[cut:]
         result = levene(ds1, ds2)
         row.extend([result.statistic, result.pvalue])
-        row.append('H0 Accepted' if result.pvalue > 0.05 else 'H0 Rejected')
+        row.append(self.H0_ACCEPTED if result.pvalue > 0.05 else 'H0 Rejected')
         row.append('Homocedástica' if result[1] > 0.05 else 'Heterocedástica')
         return pd.DataFrame([row], columns=['Dataset', 'Levene Statistic', 'p-value', 'Result', 'Cedasticidade'])
 
     def analyse(self) -> None:
-        adf: pd.DataFrame = self.stationarity()
-        hmk: pd.DataFrame = self.homoscedasticity()
+        adf: pd.DataFrame = self.stationarity
+        hmk: pd.DataFrame = self.homoscedasticity
         self.__description = ''
         if 'Rejected' in adf['Result'].values[0]:
             self.__description += 'A série é estacionária!!\n'
@@ -152,7 +155,7 @@ if __name__ == '__main__':
     data = data[np.where(data > 0)[0]]
     an = Analyser(data, model='multiplicative')
     print(an.stats())
-    l = ['seasonal', 'resid', 'observed']
-    g = an.plot_decomposition(*l, figsize=(20, 10))
+    fields = ['seasonal', 'resid', 'observed']
+    g = an.plot_decomposition(*fields, figsize=(20, 10))
     g.savefig('data.png')
     print(an)
